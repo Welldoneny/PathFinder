@@ -8,7 +8,8 @@ import 'package:path_finder/features/drawer_widget.dart';
 import 'package:path_finder/features/layers_button_widget.dart';
 
 class MainPage extends StatefulWidget {
-  const MainPage({super.key});
+  final String login;
+  const MainPage({super.key, required this.login});
 
   @override
   State<MainPage> createState() => _MainPageState();
@@ -76,7 +77,7 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const MyDrawer(),
+      drawer: MyDrawer(login: widget.login,),
       body: Stack(
         children: [
           /// КАРТА

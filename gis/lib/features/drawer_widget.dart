@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class MyDrawer extends StatelessWidget {
-  const MyDrawer({super.key});
+  final String login;
+  const MyDrawer({super.key, required this.login});
 
   @override
   Widget build(BuildContext context) {
@@ -18,12 +19,12 @@ class MyDrawer extends StatelessWidget {
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
-            const DrawerHeader(
+            DrawerHeader(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Меню', style: TextStyle(fontSize: 20)),
-                  Text('Profile name', style: TextStyle(fontSize: 16)),
+                  Text(login, style: TextStyle(fontSize: 16)),
                 ],
               ),
             ),
@@ -72,7 +73,7 @@ class MyDrawer extends StatelessWidget {
               title: const Text('Выйти'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/dark_mode');
+                Navigator.pushNamed(context, '/');
               },
             ),
           ],

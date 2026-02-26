@@ -11,7 +11,15 @@ class AppRouter {
     switch (settings.name) {
       case login:
         return MaterialPageRoute(
-          builder: (_) => const LoginPage(),
+          builder: (context) => LoginPage(
+            onLoginPressed: (login, password, rememberMe) {
+              Navigator.pushReplacementNamed(
+                context,
+                AppRouter.main,
+                arguments: {'login': login, 'rememberMe': rememberMe},
+              );
+            },
+          ),
         );
 
       // case register:
@@ -20,15 +28,19 @@ class AppRouter {
       //   );
 
       case main:
+        final args = settings.arguments as Map<String, dynamic>?;
+
+        final login = args?['login'] as String;
+        //final rememberMe = args?['rememberMe'] as bool? ?? false;
+
         return MaterialPageRoute(
-          builder: (_) => const MainPage(),
+          builder: (_) => MainPage(login: login),
         );
 
       default:
         return MaterialPageRoute(
-          builder: (_) => const Scaffold(
-            body: Center(child: Text('Route not found')),
-          ),
+          builder: (_) =>
+              const Scaffold(body: Center(child: Text('Route not found'))),
         );
     }
   }
