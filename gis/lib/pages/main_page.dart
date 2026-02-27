@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:path_finder/map/geolocator.dart';
 import 'package:path_finder/map/map_widget.dart';
 import 'package:path_finder/model/route_point.dart';
+import 'package:path_finder/styles.dart/button_style.dart';
 import 'package:path_finder/widgets/burger_widget.dart';
 import 'package:path_finder/features/drawer_widget.dart';
 import 'package:path_finder/features/layers_button_widget.dart';
+import 'package:path_finder/widgets/geoposition_button_widget.dart';
 
 class MainPage extends StatefulWidget {
   final String login;
@@ -18,7 +21,9 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   late final MapController _mapController;
   bool _isRouteMode = false;
-  final List<RoutePoint> _routePoints = [];
+  LatLng? _userLocation;
+  bool _isLocated = false;
+  late final List<RoutePoint> _routePoints = [];
   String _currentUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
   @override
@@ -87,13 +92,28 @@ class _MainPageState extends State<MainPage> {
             isRouteMode: _isRouteMode,
             onMapTap: _addRoutePoint,
             routePoints: _routePoints,
+            userLocation: _userLocation,
+            isLocated: _isLocated,
           ),
 
           /// БУРГЕР СЛЕВА
           buildDrawerButton(),
 
           /// КНОПКА СМЕНЫ КАРТЫ СПРАВА
-          MapTypeButton(onSelected: (value) => setMap(value)),
+          Positioned(
+            top: 30,
+            right: 16,
+            child: Column(
+              children: [
+                MapTypeButton(onSelected: (value) => setMap(value)),
+                SizedBox(height: 10),
+                LocationButton(
+                  onPressed: _moveToCurrentLocation,
+                  style: buttonStyle,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
       floatingActionButton: Column(
@@ -111,6 +131,7 @@ class _MainPageState extends State<MainPage> {
                     tooltip: "Сохранить маршрут",
                     child: const Icon(Icons.save),
                   ),
+                  SizedBox(height: 10),
                   FloatingActionButton(
                     mini: true,
                     onPressed: _removeLastRoutePoint,
@@ -179,5 +200,33 @@ class _MainPageState extends State<MainPage> {
         _routePoints.clear();
       }
     });
+  }
+
+  Future<void> _moveToCurrentLocation() async {
+    if (!_isLocated) {
+      try {
+        final position = await determinePosition();
+
+        final latLng = LatLng(position.latitude, position.longitude);
+
+        setState(() {
+          _isLocated = true;
+          _userLocation = latLng;
+        });
+
+        _mapController.move(latLng, 15);
+      } catch (e) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+    else {
+        setState(() {
+          _isLocated = !_isLocated;
+        });
+    }
   }
 }

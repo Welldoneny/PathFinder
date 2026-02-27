@@ -10,6 +10,8 @@ class MyMap extends StatelessWidget {
   final bool isRouteMode;
   final void Function(LatLng latLng)? onMapTap;
   final List<RoutePoint> routePoints;
+  final LatLng? userLocation;
+  final bool isLocated;
 
   const MyMap({
     required this.mapController,
@@ -17,6 +19,8 @@ class MyMap extends StatelessWidget {
     required this.isRouteMode,
     required this.onMapTap,
     required this.routePoints,
+    required this.isLocated,
+    this.userLocation,
     super.key,
   });
 
@@ -55,6 +59,17 @@ class MyMap extends StatelessWidget {
                     .toList(),
                 strokeWidth: 4,
                 color: Colors.blue,
+              ),
+            ],
+          ),
+        if (userLocation != null && isLocated == true)
+          MarkerLayer(
+            markers: [
+              Marker(
+                point: userLocation!,
+                width: 40,
+                height: 40,
+                child: Icon(Icons.location_on, color: Colors.blue,)
               ),
             ],
           ),
