@@ -9,6 +9,7 @@ Widget buildMapTileWidget(BuildContext context, String title, String image, Stri
       margin: EdgeInsets.zero,
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Expanded(
             child: Image.asset(

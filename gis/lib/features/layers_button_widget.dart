@@ -11,14 +11,14 @@ class MapTypeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
       padding: const EdgeInsets.all(8),
-      constraints: const BoxConstraints(minWidth: 140, maxWidth: 280),
+      constraints: const BoxConstraints(minWidth: 160, maxWidth: 300),
       onSelected: onSelected,
       itemBuilder: (context) => [
         PopupMenuItem(
           padding: EdgeInsets.zero,
           enabled: false,
           child: SizedBox(
-            width: 280,
+            width: 300,
             child: GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,

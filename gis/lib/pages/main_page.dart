@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:path_finder/apiServices/api_service.dart';
+import 'package:path_finder/db/db_service.dart';
 import 'package:path_finder/map/geolocator.dart';
 import 'package:path_finder/map/map_widget.dart';
 import 'package:path_finder/model/route_point.dart';
@@ -12,7 +15,8 @@ import 'package:path_finder/widgets/geoposition_button_widget.dart';
 
 class MainPage extends StatefulWidget {
   final String login;
-  const MainPage({super.key, required this.login});
+  final int id;
+  const MainPage({super.key, required this.id, required this.login});
 
   @override
   State<MainPage> createState() => _MainPageState();
@@ -23,6 +27,8 @@ class _MainPageState extends State<MainPage> {
   bool _isRouteMode = false;
   LatLng? _userLocation;
   bool _isLocated = false;
+  double _distanceKm = 0.0;
+  double _totalAscent = 0.0;
   late final List<RoutePoint> _routePoints = [];
   String _currentUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
@@ -82,7 +88,7 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: MyDrawer(login: widget.login,),
+      drawer: MyDrawer(id: widget.id, login: widget.login),
       body: Stack(
         children: [
           /// КАРТА
@@ -127,7 +133,7 @@ class _MainPageState extends State<MainPage> {
                 children: [
                   FloatingActionButton(
                     mini: true,
-                    onPressed: () {},
+                    onPressed: _saveRoute,
                     tooltip: "Сохранить маршрут",
                     child: const Icon(Icons.save),
                   ),
@@ -171,7 +177,20 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _addRoutePoint(LatLng latLng) async {
-    double altitude = 1;
+    double altitude = await ApiService.getAltitude(latLng.latitude, latLng.longitude);
+
+    if (_routePoints.isNotEmpty) {
+      final last = _routePoints.last;
+      final segment = Geolocator.distanceBetween(
+        last.latitude,
+        last.longitude,
+        latLng.latitude,
+        latLng.longitude,
+      );
+      final altiDiff  = altitude - last.altitude;
+      if(altiDiff > 0) _totalAscent += altiDiff;
+      _distanceKm += segment / 1000;
+    }
 
     setState(() {
       _routePoints.add(
@@ -184,13 +203,26 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  void _removeLastRoutePoint() {
-    if (_routePoints.isEmpty) return;
+void _removeLastRoutePoint() {
+  if (_routePoints.isEmpty) return;
 
-    setState(() {
-      _routePoints.removeLast();
-    });
+  if (_routePoints.length >= 2) {
+    final last = _routePoints.last;
+    final prev = _routePoints[_routePoints.length - 2];
+    final segment = Geolocator.distanceBetween(
+      prev.latitude, prev.longitude,
+      last.latitude, last.longitude,
+    );
+    final diff = last.altitude - prev.altitude;
+    _totalAscent -= diff > 0 ? diff : 0;
+    _distanceKm -= segment / 1000;
+    if (_distanceKm < 0) _distanceKm = 0;
   }
+
+  setState(() {
+    _routePoints.removeLast();
+  });
+}
 
   void _toggleRouteMode() {
     setState(() {
@@ -198,6 +230,8 @@ class _MainPageState extends State<MainPage> {
 
       if (!_isRouteMode) {
         _routePoints.clear();
+        _distanceKm = 0.0;
+        _totalAscent = 0.0;
       }
     });
   }
@@ -222,11 +256,37 @@ class _MainPageState extends State<MainPage> {
           context,
         ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
+    } else {
+      setState(() {
+        _isLocated = !_isLocated;
+      });
     }
-    else {
-        setState(() {
-          _isLocated = !_isLocated;
-        });
+  }
+
+  Future<void> _saveRoute() async {
+    if (_routePoints.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Маршрут пустой')));
+      return;
     }
+
+    final points = _routePoints
+        .map((p) => {'lat': p.latitude, 'lng': p.longitude, 'alt': p.altitude})
+        .toList();
+
+    final success = await DbService.saveRoute(
+      userId: widget.id,
+      distanceKm: _distanceKm,
+      totalAscent: _totalAscent,
+      points: points,
+    );
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success ? 'Маршрут сохранён' : 'Ошибка сохранения'),
+      ),
+    );
   }
 }

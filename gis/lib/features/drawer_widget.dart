@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 class MyDrawer extends StatelessWidget {
   final String login;
-  const MyDrawer({super.key, required this.login});
+  final int id;
+  const MyDrawer({super.key, required this.id, required this.login});
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +34,11 @@ class MyDrawer extends StatelessWidget {
               title: const Text('Профиль'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/profile');
+                Navigator.pushNamed(
+                  context,
+                  '/profile',
+                  arguments: {'id': id, 'login': login}, // передай логин
+                );
               },
             ),
             ListTile(

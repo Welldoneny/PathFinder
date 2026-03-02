@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget {
   final void Function(String login, String password, bool rememberMe)?
-      onLoginPressed;
+  onLoginPressed;
 
   final VoidCallback? onCreateAccountPressed;
 
@@ -30,6 +30,18 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _submit() {
+    if (_loginController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Не введен логин')));
+      return;
+    }
+    if (_passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Не введен пароль')));
+      return;
+    }
     widget.onLoginPressed?.call(
       _loginController.text.trim(),
       _passwordController.text,
@@ -51,10 +63,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 const Text(
                   'Вход',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
 
@@ -97,10 +106,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 const SizedBox(height: 24),
 
-                ElevatedButton(
-                  onPressed: _submit,
-                  child: const Text('Войти'),
-                ),
+                ElevatedButton(onPressed: _submit, child: const Text('Войти')),
 
                 const SizedBox(height: 16),
 
