@@ -4,7 +4,7 @@ import 'package:path_finder/db/db_service.dart';
 class RoutesPage extends StatefulWidget {
   final int userId;
   final void Function(int routeId)? onSelectRoute;
-  final void Function(int routeId)? onCalculateRoute;
+  final void Function(int routeId, DateTime? date, double? gearWeight, int userId)? onCalculateRoute;
   final Future<void> Function(int routeId)? onDeleteRoute;
 
   const RoutesPage({
@@ -70,6 +70,85 @@ class _RoutesPageState extends State<RoutesPage> {
           const SnackBar(content: Text("Не удалось поменять название")),
         );
       }
+    }
+  }
+
+  Future<void> _onCalculatePressed(int routeId) async {
+    final dateController = TextEditingController();
+    DateTime? selectedDate;
+    final weightController = TextEditingController();
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Параметры похода'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            StatefulBuilder(
+              builder: (context, setStateDialog) => Column(
+                children: [
+                  TextField(
+                    controller: dateController,
+                    readOnly: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Дата похода',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.calendar_today),
+                    ),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        setStateDialog(() {
+                          selectedDate = picked;
+                          dateController.text =
+                              '${picked.day.toString().padLeft(2, '0')}.${picked.month.toString().padLeft(2, '0')}.${picked.year}';
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: weightController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Вес снаряжения',
+                      suffixText: 'кг',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Рассчитать'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      widget.onCalculateRoute?.call(
+        routeId,
+        selectedDate,
+        double.tryParse(weightController.text),
+        widget.userId
+      );
     }
   }
 
@@ -207,8 +286,7 @@ class _RoutesPageState extends State<RoutesPage> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: () =>
-                                  widget.onCalculateRoute?.call(routeId),
+                              onPressed: () => _onCalculatePressed(routeId),
                               icon: const Icon(Icons.psychology, size: 16),
                               label: const Text('Рассчитать'),
                             ),

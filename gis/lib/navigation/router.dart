@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:path_finder/apiServices/api_service.dart';
+import 'package:path_finder/config.dart';
 import 'package:path_finder/crypto/crypto.dart';
 import 'package:path_finder/crypto/salt.dart';
 import 'package:path_finder/db/db_service.dart';
@@ -7,6 +9,7 @@ import 'package:path_finder/pages/login_page.dart';
 import 'package:path_finder/pages/profile_page.dart';
 import 'package:path_finder/pages/registration_page.dart';
 import 'package:path_finder/pages/routes_page.dart';
+import 'package:path_finder/widgets/result.dart';
 
 class AppRouter {
   static const String login = '/';
@@ -231,8 +234,87 @@ class AppRouter {
                 },
               );
             },
-            onCalculateRoute: (routeId) {
-              // переход к расчёту ИИ
+            onCalculateRoute: (routeId, date, backpackWeight, userId) async {
+              final points = await DbService.getRoutePoints(routeId);
+              final profile = await DbService.getProfile(userId);
+              final route = await DbService.getRouteInfo(routeId);
+
+              Map<String, dynamic>? weather;
+              if (date != null && points.isNotEmpty) {
+                weather = await ApiService.getWeather(
+                  points,
+                  date,
+                  Config.weatherApiKey,
+                );
+              }
+              // Раскидываем по переменным
+              final int? age = profile?['age'];
+              final bool? sex = profile?['sex'];
+              final double? weight = profile?['weight'];
+              final double? height = profile?['height'];
+              final double? timePer1kmMin = profile?['timePer1kmMin'];
+              final double? vo2 = profile?['vo2'];
+              final double? distanceKm = route?['distance_km'];
+              final double? totalAscent = route?['total_ascent_m'];
+              final double? temp = weather?['temp'];
+              final int? humidity = weather?['humidity'];
+
+              final result = await ApiService.predict(
+                age: age,
+                sex: sex,
+                weight: weight,
+                height: height,
+                timePer1kmMin: timePer1kmMin,
+                vo2: vo2,
+                gearWeight: backpackWeight,
+                temp: temp,
+                humidity: humidity,
+                distanceKm: distanceKm,
+                totalAscent: totalAscent,
+              );
+
+              if (!context.mounted) return;
+              if (result == null) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Ошибка расчёта')));
+                return;
+              }
+
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Результат расчёта'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      resultRow(
+                        Icons.water_drop,
+                        'Вода',
+                        '${(result['water'] as num).toStringAsFixed(1)} л',
+                      ),
+                      const SizedBox(height: 12),
+                      resultRow(
+                        Icons.lunch_dining,
+                        'Еда',
+                        '${(result['food'] as num).toStringAsFixed(1)} ккал',
+                      ),
+                      const SizedBox(height: 12),
+                      resultRow(
+                        Icons.timer,
+                        'Время',
+                        '${(result['time'] as num).toStringAsFixed(1)} ч',
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Закрыть'),
+                    ),
+                  ],
+                ),
+              );
             },
             onDeleteRoute: (routeId) async {
               final isDeleted = DbService.deleteRoute(routeId);
@@ -260,7 +342,8 @@ class AppRouter {
         //final rememberMe = args?['rememberMe'] as bool? ?? false;
 
         return MaterialPageRoute(
-          builder: (_) => MainPage(id: id, login: login, routePoints: routePoints),
+          builder: (_) =>
+              MainPage(id: id, login: login, routePoints: routePoints),
         );
 
       default:

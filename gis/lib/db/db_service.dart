@@ -245,4 +245,26 @@ class DbService {
       await conn.close();
     }
   }
+
+  static Future<Map<String, dynamic>?> getRouteInfo(int routeId) async {
+    final conn = await _connect();
+    if (conn == null) return null;
+    try {
+      final result = await conn.execute(
+        'SELECT distance_km, total_ascent_m FROM routes WHERE id = \$1',
+        parameters: [routeId],
+      );
+      if (result.isEmpty) return null;
+      return {
+        'distance_km': result.first[0] != null
+            ? (result.first[0] as num).toDouble()
+            : null,
+        'total_ascent_m': result.first[1] != null
+            ? (result.first[1] as num).toDouble()
+            : null,
+      };
+    } finally {
+      await conn.close();
+    }
+  }
 }

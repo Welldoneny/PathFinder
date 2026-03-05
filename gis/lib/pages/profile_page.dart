@@ -97,7 +97,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   radius: 48,
                   backgroundColor: Colors.grey.shade300,
                   child: Text(
-                    widget.login[0].toUpperCase(),
+                    widget.login.isNotEmpty ? widget.login[0].toUpperCase() : '?',
                     style: const TextStyle(fontSize: 40),
                   ),
                 ),
@@ -107,7 +107,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
               Center(
                 child: Text(
-                  widget.login,
+                  widget.login.isNotEmpty ? widget.login : '?',
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
