@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:path_finder/model/route_point.dart';
 import 'package:postgres/postgres.dart';
 
 class DbService {
@@ -157,6 +158,89 @@ class DbService {
       return true;
     } catch (e) {
       return false;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getRoutes(int userId) async {
+    final conn = await _connect();
+    if (conn == null) return [];
+    try {
+      final result = await conn.execute(
+        'SELECT id, name, distance_km, total_ascent_m, created_at '
+        'FROM routes WHERE user_id = \$1 ORDER BY created_at DESC',
+        parameters: [userId],
+      );
+      return result
+          .map(
+            (row) => {
+              'id': (row[0] as num).toInt(),
+              'name': row[1] as String?,
+              'distance_km': row[2] != null ? (row[2] as num).toDouble() : null,
+              'total_ascent_m': row[3] != null
+                  ? (row[3] as num).toDouble()
+                  : null,
+              'created_at': row[4] as DateTime,
+            },
+          )
+          .toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  static Future<bool?> deleteRoute(int routeId) async {
+    final conn = await _connect();
+    if (conn == null) return null;
+    try {
+      await conn.execute(
+        'DELETE FROM routes WHERE id = \$1',
+        parameters: [routeId],
+      );
+      return true;
+    } catch (e) {
+      return false;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  static Future<bool?> updateRouteName(int routeId, String name) async {
+    final conn = await _connect();
+    if (conn == null) return null;
+    try {
+      await conn.execute(
+        'UPDATE routes SET name = \$1 WHERE id = \$2',
+        parameters: [name, routeId],
+      );
+      return true;
+    } catch (e) {
+      return false;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  static Future<List<RoutePoint>> getRoutePoints(int routeId) async {
+    final conn = await _connect();
+    if (conn == null) return [];
+    try {
+      final result = await conn.execute(
+        'SELECT points FROM routes WHERE id = \$1',
+        parameters: [routeId],
+      );
+      if (result.isEmpty) return [];
+      final List points = result.first[0] as List;
+      return points
+          .map(
+            (p) => RoutePoint(
+              latitude: (p['lat'] as num).toDouble(),
+              longitude: (p['lng'] as num).toDouble(),
+              altitude: (p['alt'] as num).toDouble(),
+            ),
+          )
+          .toList();
     } finally {
       await conn.close();
     }

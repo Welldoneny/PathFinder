@@ -50,7 +50,36 @@ class MyMap extends StatelessWidget {
           // ),
           userAgentPackageName: 'PathFinder',
         ),
-        if (routePoints.isNotEmpty)
+        if (userLocation != null && isLocated == true)
+          MarkerLayer(
+            markers: [
+              Marker(
+                point: userLocation!,
+                width: 40,
+                height: 40,
+                child: Icon(Icons.location_on, color: Colors.blue),
+              ),
+            ],
+          ),
+        if (routePoints.length >= 2)
+          MarkerLayer(
+            markers: [
+              Marker(
+                point: LatLng(
+                  routePoints.last.latitude,
+                  routePoints.last.longitude,
+                ),
+                width: 32,
+                height: 32,
+                child: const Icon(
+                  Icons.flag_circle,
+                  color: Colors.green,
+                  size: 32,
+                ),
+              ),
+            ],
+          ),
+        if (routePoints.isNotEmpty) ...[
           PolylineLayer(
             polylines: [
               Polyline(
@@ -62,17 +91,24 @@ class MyMap extends StatelessWidget {
               ),
             ],
           ),
-        if (userLocation != null && isLocated == true)
           MarkerLayer(
             markers: [
               Marker(
-                point: userLocation!,
-                width: 40,
-                height: 40,
-                child: Icon(Icons.location_on, color: Colors.blue,)
+                point: LatLng(
+                  routePoints.first.latitude,
+                  routePoints.first.longitude,
+                ),
+                width: 32,
+                height: 32,
+                child: const Icon(
+                  Icons.flag,
+                  color: Colors.green,
+                  size: 32,
+                ),
               ),
             ],
           ),
+        ],
       ],
     );
   }

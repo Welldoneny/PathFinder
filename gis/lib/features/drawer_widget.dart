@@ -46,7 +46,11 @@ class MyDrawer extends StatelessWidget {
               title: const Text('Маршруты'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/routes');
+                Navigator.pushNamed(
+                  context,
+                  '/routes',
+                  arguments: {'id': id},
+                );
               },
             ),
             ListTile(

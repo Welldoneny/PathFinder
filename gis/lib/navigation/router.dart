@@ -6,12 +6,14 @@ import 'package:path_finder/pages/main_page.dart';
 import 'package:path_finder/pages/login_page.dart';
 import 'package:path_finder/pages/profile_page.dart';
 import 'package:path_finder/pages/registration_page.dart';
+import 'package:path_finder/pages/routes_page.dart';
 
 class AppRouter {
   static const String login = '/';
   static const String register = '/register';
   static const String main = '/main';
   static const String profile = '/profile';
+  static const String routes = '/routes';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -211,15 +213,54 @@ class AppRouter {
           },
         );
 
+      case routes:
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (context) => RoutesPage(
+            userId: args?['id'] ?? 0,
+            onSelectRoute: (routeId) async {
+              final points = await DbService.getRoutePoints(routeId);
+              if (!context.mounted) return;
+              Navigator.pushReplacementNamed(
+                context,
+                AppRouter.main,
+                arguments: {
+                  'id': args?['id'] ?? 0,
+                  'login': args?['login'] ?? '',
+                  'routePoints': points,
+                },
+              );
+            },
+            onCalculateRoute: (routeId) {
+              // переход к расчёту ИИ
+            },
+            onDeleteRoute: (routeId) async {
+              final isDeleted = DbService.deleteRoute(routeId);
+              if (await isDeleted == true) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Успешно удалено")),
+                );
+              } else {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Не удалось удалить")),
+                );
+              }
+            },
+          ),
+        );
+
       case main:
         final args = settings.arguments as Map<String, dynamic>?;
 
         final login = args?['login'] as String;
         final id = args?['id'] as int;
+        final routePoints = args?['routePoints'];
         //final rememberMe = args?['rememberMe'] as bool? ?? false;
 
         return MaterialPageRoute(
-          builder: (_) => MainPage(id: id, login: login),
+          builder: (_) => MainPage(id: id, login: login, routePoints: routePoints),
         );
 
       default:

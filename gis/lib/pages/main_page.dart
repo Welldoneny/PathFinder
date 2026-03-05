@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+// ignore: unused_import
 import 'package:path_finder/apiServices/api_service.dart';
 import 'package:path_finder/db/db_service.dart';
 import 'package:path_finder/map/geolocator.dart';
@@ -16,7 +17,8 @@ import 'package:path_finder/widgets/geoposition_button_widget.dart';
 class MainPage extends StatefulWidget {
   final String login;
   final int id;
-  const MainPage({super.key, required this.id, required this.login});
+  final List<RoutePoint>? routePoints;
+  const MainPage({super.key, required this.id, required this.login, this.routePoints});
 
   @override
   State<MainPage> createState() => _MainPageState();
@@ -29,13 +31,17 @@ class _MainPageState extends State<MainPage> {
   bool _isLocated = false;
   double _distanceKm = 0.0;
   double _totalAscent = 0.0;
-  late final List<RoutePoint> _routePoints = [];
+  late List<RoutePoint> _routePoints = [];
   String _currentUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
   @override
   void initState() {
     super.initState();
     _mapController = MapController();
+      final List<RoutePoint>? loadedPoints = widget.routePoints;
+  if (loadedPoints != null && loadedPoints.isNotEmpty) {
+    _routePoints = loadedPoints;
+  }
   }
 
   @override
@@ -178,7 +184,7 @@ class _MainPageState extends State<MainPage> {
 
   void _addRoutePoint(LatLng latLng) async {
     double altitude = await ApiService.getAltitude(latLng.latitude, latLng.longitude);
-
+    //double altitude = 0;
     if (_routePoints.isNotEmpty) {
       final last = _routePoints.last;
       final segment = Geolocator.distanceBetween(
@@ -187,8 +193,8 @@ class _MainPageState extends State<MainPage> {
         latLng.latitude,
         latLng.longitude,
       );
-      final altiDiff  = altitude - last.altitude;
-      if(altiDiff > 0) _totalAscent += altiDiff;
+      final altiDiff = altitude - last.altitude;
+      if (altiDiff > 0) _totalAscent += altiDiff;
       _distanceKm += segment / 1000;
     }
 
@@ -203,26 +209,28 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-void _removeLastRoutePoint() {
-  if (_routePoints.isEmpty) return;
+  void _removeLastRoutePoint() {
+    if (_routePoints.isEmpty) return;
 
-  if (_routePoints.length >= 2) {
-    final last = _routePoints.last;
-    final prev = _routePoints[_routePoints.length - 2];
-    final segment = Geolocator.distanceBetween(
-      prev.latitude, prev.longitude,
-      last.latitude, last.longitude,
-    );
-    final diff = last.altitude - prev.altitude;
-    _totalAscent -= diff > 0 ? diff : 0;
-    _distanceKm -= segment / 1000;
-    if (_distanceKm < 0) _distanceKm = 0;
+    if (_routePoints.length >= 2) {
+      final last = _routePoints.last;
+      final prev = _routePoints[_routePoints.length - 2];
+      final segment = Geolocator.distanceBetween(
+        prev.latitude,
+        prev.longitude,
+        last.latitude,
+        last.longitude,
+      );
+      final diff = last.altitude - prev.altitude;
+      _totalAscent -= diff > 0 ? diff : 0;
+      _distanceKm -= segment / 1000;
+      if (_distanceKm < 0) _distanceKm = 0;
+    }
+
+    setState(() {
+      _routePoints.removeLast();
+    });
   }
-
-  setState(() {
-    _routePoints.removeLast();
-  });
-}
 
   void _toggleRouteMode() {
     setState(() {
