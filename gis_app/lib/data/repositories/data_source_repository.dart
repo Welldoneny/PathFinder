@@ -75,6 +75,7 @@ class RemoteDataSource implements DataSource {
     return result;
   }
 
+  /// Меняет название маршрута в БД
   Future<MyResult<void>> changeRouteName(String newName, int routeId, int userId) async {
     return _serverService.changeRouteName(newName, userId, routeId);
   }
