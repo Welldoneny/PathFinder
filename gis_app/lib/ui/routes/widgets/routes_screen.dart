@@ -344,6 +344,7 @@ class _RoutesScreenState extends State<RoutesScreen> {
                                     route.routePoints,
                                     route.totaldistance,
                                     route.totalAscent,
+                                    route.isLocal,
                                   );
                                   Navigator.pushReplacement(
                                     context,

@@ -73,21 +73,28 @@ class RouteRepository {
     List<RoutePoint> routePoints,
   ) async {
     final totalAscent = countAscent(routePoints);
-    try {
-      final result = await _remoteDataSource.addRoute(
-        user,
-        distance,
-        totalAscent,
-        routePoints,
-      );
-      switch (result) {
-        case Ok<void>():
-          return Ok(null);
-        case Error<void>():
-          return Error(result.error);
-      }
-    } on Exception catch (e) {
-      return Error(e);
+    final result = await _remoteDataSource.addRoute(
+      user,
+      distance,
+      totalAscent,
+      routePoints,
+    );
+    switch (result) {
+      case Ok<void>():
+        return Ok(null);
+      case Error<void>():
+        final localResult = await _localDataSource.addRoute(
+          user,
+          distance,
+          totalAscent,
+          routePoints,
+        );
+        switch (localResult) {
+          case Ok<void>():
+            return Ok(null);
+          case Error<void>():
+            return Error(localResult.error);
+        }
     }
   }
 
@@ -219,14 +226,11 @@ class RouteRepository {
     double ta,
     double td,
     List<RoutePoint> rp,
+    bool isLocal,
   ) async {
-    final result = await _remoteDataSource.updateRoute(
-      routeId,
-      user,
-      ta,
-      td,
-      rp,
-    );
+    final result = isLocal
+        ? await _localDataSource.updateRoute(routeId, user, ta, td, rp)
+        : await _remoteDataSource.updateRoute(routeId, user, ta, td, rp);
     return result;
   }
 

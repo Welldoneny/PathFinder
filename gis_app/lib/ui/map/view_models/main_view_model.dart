@@ -26,6 +26,7 @@ class MainViewModel extends ChangeNotifier {
   // включается для отображения индикатора во время длинных процессов
   bool isLoading = false;
   bool isMoveNeeded = false;
+  late bool isLocal;
   // список точек маршрута
   List<RoutePoint> routePoints = [];
   // данные пользователя
@@ -42,11 +43,18 @@ class MainViewModel extends ChangeNotifier {
   String? errorMessage;
   String? succssesMessage;
 
-  void setRoute(int ri, List<RoutePoint> rp, double td, double ta) {
+  void setRoute(
+    int ri,
+    List<RoutePoint> rp,
+    double td,
+    double ta,
+    bool isLocal,
+  ) {
     routeId = ri;
     routePoints = rp;
     totalDistance = td;
     totalAscent = ta;
+    this.isLocal = isLocal;
     isEditingMode = true;
     isRouteMode = true;
     isMoveNeeded = true;
@@ -141,31 +149,49 @@ class MainViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// добавляет НОВЫЙ маршрут
+  /// Добавляет новый маршрут
   Future<void> addRoute() async {
     isLoading = true;
     notifyListeners();
-    final routesWithAltitude = await _routeRepository.getAltitude(routePoints);
-    switch (routesWithAltitude) {
+
+    List<RoutePoint> pointsToSave = routePoints;
+    String? successMessageOverride;
+
+    // 1. Пытаемся получить высоты
+    final altitudeResult = await _routeRepository.getAltitude(routePoints);
+
+    switch (altitudeResult) {
       case Ok<List<RoutePoint>>():
-        {
-          routePoints = routesWithAltitude.value;
-          final result = await _routeRepository.addRoute(
-            user,
-            totalDistance,
-            routePoints,
-          );
-          switch (result) {
-            case Ok<void>():
-              succssesMessage = "Маршрут сохранен";
-              isEditingMode = true;
-            case Error<void>():
-              errorMessage = result.error.toString();
-          }
-        }
+        pointsToSave = altitudeResult.value; // используем точки с высотами
+        break;
+
       case Error<List<RoutePoint>>():
-        errorMessage = routesWithAltitude.error.toString();
+        errorMessage = altitudeResult.error.toString();
+        successMessageOverride =
+            "Маршрут сохранен без высот, обновите маршрут позже";
+        // pointsToSave остаётся оригинальным
+        break;
     }
+
+    // 2. Сохраняем маршрут (один раз!)
+    final saveResult = await _routeRepository.addRoute(
+      user,
+      totalDistance,
+      pointsToSave,
+    );
+
+    switch (saveResult) {
+      case Ok<void>():
+        succssesMessage = successMessageOverride ?? "Маршрут сохранен";
+        isEditingMode = true;
+        // если были ошибки по высотам — они уже остались в errorMessage
+        break;
+
+      case Error<void>():
+        errorMessage = saveResult.error.toString();
+        break;
+    }
+
     isLoading = false;
     notifyListeners();
   }
@@ -178,6 +204,7 @@ class MainViewModel extends ChangeNotifier {
       totalAscent,
       totalDistance,
       routePoints,
+      isLocal,
     );
     switch (result) {
       case Ok<void>():

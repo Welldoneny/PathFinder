@@ -145,10 +145,12 @@ class LocalService {
     try {
       final db = await _getDb();
       await db.insert('local_routes', {
-        'id': userId,
-        'distance': distance,
-        'total_asc': totalAscent,
+        'user_id': userId,
+        'route_id': DateTime.now().millisecondsSinceEpoch,
+        'distance_km': distance,
+        'total_ascent_m': totalAscent,
         'points': jsonEncode(routePoints),
+        'created_at': DateTime.now().toIso8601String(),
       }, conflictAlgorithm: ConflictAlgorithm.replace);
       return Ok(null);
     } catch (e) {

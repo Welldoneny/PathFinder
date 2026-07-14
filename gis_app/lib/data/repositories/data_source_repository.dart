@@ -98,8 +98,8 @@ class LocalDataSource implements DataSource {
     double totalAscent,
     List<RoutePoint> points,
   ) async{
-    //return _localService.addRoute(user.id, distance, totalAscent, points);
-    return Ok(null);
+    return _localService.addRoute(user.id, distance, totalAscent, points);
+    //return Ok(null);
   }
 
   /// скачивает маршрут локально
