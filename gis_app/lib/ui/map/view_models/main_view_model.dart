@@ -197,23 +197,41 @@ class MainViewModel extends ChangeNotifier {
   }
 
   /// обновляет существующий маршрут
-  Future<void> saveChangesRoute() async {
-    final result = await _routeRepository.updateRoute(
-      routeId,
-      user,
-      totalAscent,
-      totalDistance,
-      routePoints,
-      isLocal,
-    );
-    switch (result) {
-      case Ok<void>():
-        succssesMessage = "Маршрут обновлен";
-      case Error<void>():
-        errorMessage = result.error.toString();
-    }
-    notifyListeners();
+Future<void> saveChangesRoute() async {
+  isLoading = true;
+  notifyListeners();
+
+  List<RoutePoint> pointsToSave = routePoints;
+  String? successMessageOverride;
+
+  final altitudeResult = await _routeRepository.getAltitude(routePoints);
+  switch (altitudeResult) {
+    case Ok<List<RoutePoint>>():
+      pointsToSave = altitudeResult.value;
+      break;
+    case Error<List<RoutePoint>>():
+      successMessageOverride = "Маршрут обновлен без высот";
+      break;
   }
+
+  final result = await _routeRepository.updateRoute(
+    routeId,
+    user,
+    totalDistance,
+    pointsToSave,
+    isLocal,
+  );
+
+  switch (result) {
+    case Ok<void>():
+      succssesMessage = successMessageOverride ?? "Маршрут обновлен";
+    case Error<void>():
+      errorMessage = result.error.toString();
+  }
+
+  isLoading = false;
+  notifyListeners();
+}
 
   /// импортирует маршрут в формате GPX или KML из файловой системы
   Future<void> importRoute() async {

@@ -169,8 +169,8 @@ class LocalDataSource implements DataSource {
   }
   
   @override
-  Future<MyResult<void>> updateRoute(int routeId, User user, double ta, double td, List<RoutePoint> rp) {
-    // TODO: implement updateRoute
-    throw UnimplementedError();
+  Future<MyResult<void>> updateRoute(int routeId, User user, double ta, double td, List<RoutePoint> rp) async{
+    final result = await _localService.updateRoute(routeId, user.id, ta, td, rp);
+    return result;
   }
 }

@@ -56,7 +56,7 @@ class RouteRepository {
     }
   }
 
-  // считает абсолютный подъем для маршрута
+  /// считает абсолютный подъем для маршрута
   double countAscent(List<RoutePoint> routePoints) {
     double totalAscent = 0;
     for (int i = 0; i < routePoints.length - 1; i++) {
@@ -81,6 +81,7 @@ class RouteRepository {
     );
     switch (result) {
       case Ok<void>():
+        invalidateCache();
         return Ok(null);
       case Error<void>():
         final localResult = await _localDataSource.addRoute(
@@ -91,6 +92,7 @@ class RouteRepository {
         );
         switch (localResult) {
           case Ok<void>():
+            invalidateCache();
             return Ok(null);
           case Error<void>():
             return Error(localResult.error);
@@ -223,14 +225,14 @@ class RouteRepository {
   Future<MyResult<void>> updateRoute(
     int routeId,
     User user,
-    double ta,
     double td,
     List<RoutePoint> rp,
     bool isLocal,
   ) async {
+    final totalAscent = countAscent(rp);
     final result = isLocal
-        ? await _localDataSource.updateRoute(routeId, user, ta, td, rp)
-        : await _remoteDataSource.updateRoute(routeId, user, ta, td, rp);
+        ? await _localDataSource.updateRoute(routeId, user, totalAscent, td, rp)
+        : await _remoteDataSource.updateRoute(routeId, user, totalAscent, td, rp);
     return result;
   }
 

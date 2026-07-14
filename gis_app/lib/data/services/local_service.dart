@@ -208,4 +208,29 @@ class LocalService {
       return Error(Exception(e));
     }
   }
+
+  Future<MyResult<void>> updateRoute(
+    int routeId,
+    int userId,
+    double totalAscent,
+    double totalDistance,
+    List<RoutePoint> routePoints,
+  ) async {
+    try {
+      final db = await _getDb();
+      await db.update(
+        'local_routes',
+        {
+          'total_ascent_m': totalAscent,
+          'distance_km': totalDistance,
+          'points': jsonEncode(routePoints),
+        },
+        where: 'route_id = ? AND user_id = ?',
+        whereArgs: [routeId, userId],
+      );
+      return Ok(null);
+    } catch (e) {
+      return Error(Exception(e));
+    }
+  }
 }
