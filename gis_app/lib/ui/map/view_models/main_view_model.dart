@@ -90,6 +90,15 @@ class MainViewModel extends ChangeNotifier {
       case 'sat':
         currentMapType =
             'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+      case 'lds':
+        currentMapType =
+            'https://api.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=a7d5d95c2e774682b6de7364ae3ac1f3';
+      case 'out':
+        currentMapType =
+            'https://api.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=a7d5d95c2e774682b6de7364ae3ac1f3';
+      case 'ocm':
+        currentMapType =
+            'https://api.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=a7d5d95c2e774682b6de7364ae3ac1f3';
       default:
         errorMessage = "Выбранная карта недоступна";
     }
@@ -197,41 +206,41 @@ class MainViewModel extends ChangeNotifier {
   }
 
   /// обновляет существующий маршрут
-Future<void> saveChangesRoute() async {
-  isLoading = true;
-  notifyListeners();
+  Future<void> saveChangesRoute() async {
+    isLoading = true;
+    notifyListeners();
 
-  List<RoutePoint> pointsToSave = routePoints;
-  String? successMessageOverride;
+    List<RoutePoint> pointsToSave = routePoints;
+    String? successMessageOverride;
 
-  final altitudeResult = await _routeRepository.getAltitude(routePoints);
-  switch (altitudeResult) {
-    case Ok<List<RoutePoint>>():
-      pointsToSave = altitudeResult.value;
-      break;
-    case Error<List<RoutePoint>>():
-      successMessageOverride = "Маршрут обновлен без высот";
-      break;
+    final altitudeResult = await _routeRepository.getAltitude(routePoints);
+    switch (altitudeResult) {
+      case Ok<List<RoutePoint>>():
+        pointsToSave = altitudeResult.value;
+        break;
+      case Error<List<RoutePoint>>():
+        successMessageOverride = "Маршрут обновлен без высот";
+        break;
+    }
+
+    final result = await _routeRepository.updateRoute(
+      routeId,
+      user,
+      totalDistance,
+      pointsToSave,
+      isLocal,
+    );
+
+    switch (result) {
+      case Ok<void>():
+        succssesMessage = successMessageOverride ?? "Маршрут обновлен";
+      case Error<void>():
+        errorMessage = result.error.toString();
+    }
+
+    isLoading = false;
+    notifyListeners();
   }
-
-  final result = await _routeRepository.updateRoute(
-    routeId,
-    user,
-    totalDistance,
-    pointsToSave,
-    isLocal,
-  );
-
-  switch (result) {
-    case Ok<void>():
-      succssesMessage = successMessageOverride ?? "Маршрут обновлен";
-    case Error<void>():
-      errorMessage = result.error.toString();
-  }
-
-  isLoading = false;
-  notifyListeners();
-}
 
   /// импортирует маршрут в формате GPX или KML из файловой системы
   Future<void> importRoute() async {
